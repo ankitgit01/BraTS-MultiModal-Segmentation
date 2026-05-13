@@ -6,7 +6,7 @@ Multi-modal 3D brain tumor segmentation on the BraTS 2021 dataset using an impro
 
 ## Features
 
-- Multi-modal MRI segmentation (T1, T1CE, T2, FLAIR)
+- Multi-modal MRI segmentation (T1CE, FLAIR)
 - 3D Attention Residual UNet architecture
 - Deep supervision for stable training
 - Focal Loss + Dice-based optimization
@@ -16,18 +16,15 @@ Multi-modal 3D brain tumor segmentation on the BraTS 2021 dataset using an impro
 - Hausdorff Distance (HD95) evaluation
 - Mixed precision training
 - Numpy caching for faster preprocessing
-
 ---
 
 ## Dataset
 
 Dataset used:
-- BraTS 2021 Brain Tumor Segmentation Challenge
+- BraTS 2021 Task 1
 
 Required modalities per patient:
-- T1
 - T1CE
-- T2
 - FLAIR
 
 Ground truth:
@@ -38,9 +35,7 @@ Expected dataset structure:
 ```text
 BraTS2021/
 ├── BraTS2021_00000/
-│   ├── *_t1.nii.gz
 │   ├── *_t1ce.nii.gz
-│   ├── *_t2.nii.gz
 │   ├── *_flair.nii.gz
 │   └── *_seg.nii.gz
 ```
@@ -58,7 +53,7 @@ The project uses an enhanced 3D UNet-based segmentation model with:
 - Deep supervision outputs
 
 Input:
-- 4-channel 3D MRI volume
+- 2-channel 3D MRI volume
 
 Output:
 - Multi-class tumor segmentation mask
@@ -76,7 +71,7 @@ Output:
 
 ### Training
 
-- Mixed precision training
+- Combined Loss (60% Dice + 40% Focal)
 - OneCycleLR scheduler
 - Data augmentation
 - Deep supervision loss aggregation
