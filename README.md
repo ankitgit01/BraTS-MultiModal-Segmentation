@@ -1,213 +1,59 @@
-# BraTS-MultiModal-Segmentation
+# 3D Brain Tumor Segmentation using Attention U-Net
 
-Multi-modal 3D brain tumor segmentation on the BraTS 2021 dataset using an improved Attention Residual UNet architecture with deep supervision, focal loss, test-time augmentation, and robustness evaluation.
+## Overview
+This repository provides an end-to-end pipeline for the automated segmentation of 3D brain tumors from multi-modal MRI scans. Leveraging deep learning techniques specifically designed for volumetric medical imaging, this project accurately isolates tumorous regions to aid in medical analysis and diagnosis. 
 
----
+The pipeline includes automated data downloading, rigorous NIfTI preprocessing, disk caching for accelerated training, and an advanced 3D Attention U-Net model with Test-Time Augmentation (TTA).
 
-## Features
+## Repository Contents
+* **`BraTS_seg.ipynb`**: The primary Jupyter Notebook containing the full execution pipeline (data ingestion, preprocessing, model definition, training loop, and evaluation).
+* **`Applied_ML_Brain_Tumor_Segmentation_Report.docx`**: A detailed project report discussing the methodology, experiments, theoretical background, and comprehensive analysis of the results.
+* **`requirements.txt`**: A list of Python dependencies required to execute the project successfully.
 
-- Multi-modal MRI segmentation (T1CE, FLAIR)
-- 3D Attention Residual UNet architecture
-- Deep supervision for stable training
-- Focal Loss + Dice-based optimization
-- Test-Time Augmentation (TTA)
-- Modality importance analysis
-- Gaussian noise robustness testing
-- Hausdorff Distance (HD95) evaluation
-- Mixed precision training
-- Numpy caching for faster preprocessing
----
-
-## Dataset
-
-Dataset used:
-- BraTS 2021 Task 1
-
-Required modalities per patient:
-- T1CE
-- FLAIR
-
-Ground truth:
-- Segmentation mask
-
-Expected dataset structure:
-
-```text
-BraTS2021/
-├── BraTS2021_00000/
-│   ├── *_t1ce.nii.gz
-│   ├── *_flair.nii.gz
-│   └── *_seg.nii.gz
-```
-
----
+## Dataset & Preprocessing
+* **Source Dataset**: BraTS 2021 Task 1 Dataset
+* **Modalities Used**: T1-weighted contrast-enhanced (T1CE) and Fluid-attenuated inversion recovery (FLAIR).
+* **Format**: 3D NIfTI volumes (`.nii.gz`).
+* **Preprocessing Pipeline**:
+  * **Normalization**: Voxel intensities are normalized per volume.
+  * **Patch Extraction**: Volumes are cropped into smaller 64x64x64 patches (center-cropped or random-cropped).
+  * **Disk Caching**: To overcome disk I/O bottlenecks during training, NIfTI files are decompressed and saved as highly optimized, compressed NumPy arrays (`.npz` and `.npy`).
 
 ## Model Architecture
+The core model is a **3D Attention U-Net** enhanced with several custom mechanisms to improve spatial feature representation and reduce overfitting:
+* **Squeeze-and-Excitation (SE) Blocks**: Integrated within double-convolution stages for channel-wise feature recalibration, allowing the network to emphasize informative channels.
+* **Attention Gates**: Applied in the decoder stages to spatially filter features propagated through skip connections, focusing the model on target structures while suppressing irrelevant background noise.
+* **Dropout Regularization**: Strategically placed Dropout layers (p=0.10) to ensure a lightweight but robust regularization against overfitting.
 
-The project uses an enhanced 3D UNet-based segmentation model with:
+## Loss Function
+To combat the severe class imbalance typical in medical image segmentation (where tumor pixels are sparse compared to background pixels), the project uses a **Combined Objective Function**:
+* **Dice Loss** (Weighted at 0.6): Optimizes spatial overlap.
+* **Focal Loss** (Weighted at 0.4): Down-weights easily classified examples to focus the network on harder-to-segment boundaries.
 
-- Residual convolution blocks
-- Attention gates
-- Encoder-decoder structure
-- Skip connections
-- Deep supervision outputs
+## Advanced Evaluation Metrics & Techniques
+The model's performance is rigorously measured across multiple dimensions. The standard evaluation metrics include:
+* **Dice Coefficient**
+* **Intersection over Union (IoU)**
+* **Precision and Recall**
+* **95th-percentile Hausdorff Distance (HD95)**
 
-Input:
-- 2-channel 3D MRI volume
+### Enhancements during Evaluation
+1. **Test-Time Augmentation (TTA)**: Evaluates predictions across 8 different geometric views (flips across H, W, D axes) and averages the predictions to improve the stability and robustness of the final tumor mask. 
+2. **Gradient-Based Modality Importance**: A custom analysis routine utilizing gradient attributions to determine which MRI modality (T1CE vs. FLAIR) contributes the most to the network's predictive performance.
 
-Output:
-- Multi-class tumor segmentation mask
+## How to Run
 
----
+### Recommended Environment
+It is highly recommended to run this project in a Cloud Jupyter environment like **Google Colab** or **Kaggle** due to the heavy computational requirements of 3D CNNs.
 
-## Training Pipeline
+### Steps
+1. Clone the repository and install the dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+2. Open BraTS_seg.ipynb in your Jupyter environment.
+    - Hardware Requirement: Ensure you enable a GPU backend (e.g., GPU T4 or GPU T4 ×2).
 
-### Preprocessing
+3. Run the notebook cells sequentially.
 
-- MRI volume loading
-- Intensity normalization
-- Volume resizing/cropping
-- Numpy caching
-
-### Training
-
-- Combined Loss (60% Dice + 40% Focal)
-- OneCycleLR scheduler
-- Data augmentation
-- Deep supervision loss aggregation
-
-### Validation
-
-Metrics used:
-- Dice Score
-- Hausdorff Distance 95 (HD95)
-
----
-
-## Test-Time Augmentation
-
-The model performs inference using multiple spatial transformations and merges predictions to improve robustness and segmentation quality.
-
-Implemented TTA combinations include:
-- Original
-- Horizontal flip
-- Vertical flip
-- Depth flip
-- Combined flips
-
----
-
-## Modality Importance Analysis
-
-Each MRI modality is evaluated independently to estimate its contribution to segmentation performance.
-
-The analysis helps identify:
-- Most informative modality
-- Redundancy between modalities
-- Model dependence on specific MRI sequences
-
----
-
-## Robustness Evaluation
-
-Robustness testing is performed by injecting Gaussian noise into validation samples and re-evaluating segmentation performance.
-
-This measures:
-- Noise sensitivity
-- Generalization stability
-- Real-world robustness
-
----
-
-## Installation
-
-Clone the repository:
-
-```bash
-git clone https://github.com/username/BraTS-MultiModal-Segmentation.git
-cd BraTS-MultiModal-Segmentation
-```
-
-Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-## Requirements
-
-Main libraries:
-- Python 3.10+
-- PyTorch
-- MONAI
-- NumPy
-- nibabel
-- scikit-image
-- matplotlib
-- tqdm
-
----
-
-## Usage
-
-### Train
-
-```bash
-python train.py
-```
-
-### Validate
-
-```bash
-python validate.py
-```
-
-### Run Inference
-
-```bash
-python inference.py
-```
-
----
-
-## Results
-
-The model is evaluated using:
-- Dice Score
-- HD95
-- Robustness under Gaussian noise
-- TTA-enhanced predictions
-
----
-
-## Project Structure
-
-```text
-├── data/
-├── cache/
-├── models/
-├── notebooks/
-├── train.py
-├── validate.py
-├── inference.py
-├── requirements.txt
-└── README.md
-```
-
----
-
-## Future Improvements
-
-- Transformer-based encoder integration
-- Cross-validation training
-- Lightweight deployment version
-- Automated hyperparameter tuning
-- Clinical visualization dashboard
-
----
-
-## License
-
-This project is intended for academic and research purposes.
+Note: The dataset extraction, downloading, and patch caching steps are fully automated in the notebook and will execute on the first run.
